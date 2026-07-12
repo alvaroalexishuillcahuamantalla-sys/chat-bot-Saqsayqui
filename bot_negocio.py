@@ -4,18 +4,27 @@ app = Flask(__name__)
 
 @app.route('/bot_negocio', methods=['POST'])
 def responder_cliente():
-    datos = request.get_json()
+    # --- SISTEMA DE LECTURA HÍBRIDO (EVITA ERROR 415) ---
+    mensaje_recibido = ""
     
-    # Extraemos el mensaje de forma segura
-    mensaje_recibido = datos.get("message", "")
+    # Intentamos leer como JSON si viene bien formateado
+    if request.is_json:
+        datos = request.get_json()
+        mensaje_recibido = datos.get("message", "")
+    else:
+        # Si AutoResponder lo envía como texto plano por error, lo capturamos aquí
+        try:
+            mensaje_recibido = request.data.decode('utf-8')
+        except Exception:
+            mensaje_recibido = ""
+            
     if mensaje_recibido is None:
         mensaje_recibido = ""
         
     # Limpiamos espacios y convertimos a minúsculas
     mensaje_cliente = str(mensaje_recibido).strip().lower()
     
-    # --- ÁRBOL DE DECISIONES ULTRA-FLEXIBLE ---
-    # Comprobamos si el número o la palabra clave están DENTRO del mensaje
+    # --- ÁRBOL DE DECISIONES DE SAQSAYKI ---
     
     # Opción 1: Horarios e Ingreso
     if "1" in mensaje_cliente:
@@ -97,7 +106,7 @@ def responder_cliente():
         )
         return jsonify({"replies": [{"message": texto_respuesta}]})
     
-    # Opción 5: Restaurante (Envía texto + imagen de la carta)
+    # Opción 5: Restaurante
     elif "5" in mensaje_cliente:
         return jsonify({
             "replies": [
@@ -115,10 +124,11 @@ def responder_cliente():
             ]
         })
         
-    # MENÚ PRINCIPAL: Si no contiene ningún número del 1 al 5
+    # MENU PRINCIPAL (Si escriben menu o cualquier otra cosa)
     else:
         texto_respuesta = (
-            "¡Bienvenido(a) al *Parque Temático Saqsayki! ✨\n\n"
+            "¡Buenas noches! ✨\n\n"
+            "Bienvenido(a) al *Parque Temático Saqsayki*\n\n"
             "Vive una experiencia única llena de aventura, diversión y naturaleza.\n\n"
             "📌 *Seleccione una opción escribiendo el número:*\n\n"
             "1️⃣ Horarios e ingreso\n"
