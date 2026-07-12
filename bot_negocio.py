@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import json
+import re
 
 app = Flask(__name__)
 
@@ -7,11 +7,10 @@ app = Flask(__name__)
 def responder_numeros():
     mensaje_recibido = ""
     
-    # 1. Extracción quirúrgica del mensaje original enviado por el cliente
+    # 1. Intentamos leer el JSON de AutoResponder
     if request.is_json:
         try:
             datos = request.get_json()
-            # Jalamos estrictamente el valor de "message" para ignorar rule_id u otros números
             mensaje_recibido = datos.get("message", "")
         except Exception:
             pass
@@ -21,16 +20,23 @@ def responder_numeros():
         except Exception:
             pass
 
-    if mensaje_recibido is None:
-        mensaje_recibido = ""
+    if not mensaje_recibido:
+        return jsonify({"replies": []})
 
-    # 2. Limpieza extrema del texto del usuario
-    # Quitamos espacios, pasamos a minúsculas y eliminamos puntos/comas basura
-    opcion = str(mensaje_recibido).strip().lower().replace(".", "").replace(",", "")
+    # Convertimos a string y limpiamos espacios básicos
+    texto_cliente = str(mensaje_recibido).strip()
+
+    # 🚨 EXTRACCIÓN INTELIGENTE 🚨
+    # Buscamos un número del 1 al 5 en el mensaje real del cliente.
+    # Si el cliente escribió "2" o "la opcion 2", esto va a capturar el "2".
+    busqueda = re.search(r'[1-5]', texto_cliente)
     
-    # 🚨 CLASIFICACIÓN ULTRA-ESTRICTA POR COMPARACIÓN DIRECTA 🚨
-    # Ya no usamos re.search global para que no se confunda con datos ocultos.
+    if not busqueda:
+        return jsonify({"replies": []}) # Si no hay un número del 1 al 5, no hace nada
+        
+    opcion = busqueda.group(0)
 
+    # 3. Emparejamos la opción con su respectivo mensaje
     if opcion == "1":
         texto = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
@@ -91,7 +97,7 @@ def responder_numeros():
             "🎒 Nos encontramos aproximadamente a 30 minutos a pie desde la Chicana Grande.\n\n"
             "🚕 En taxi podrás llegar en aproximadamente 15 minutos desde Chicana Grande.\n\n"
             "🗺️ *Google Maps:*\n"
-            "http://googleusercontent.com/maps.google.com/mapas"
+            "http://maps.google.com/?q=Saqsayki"
             "\n📞 *Taxis recomendados:*\n"
             "• 926 050 769\n"
             "• 991 972 382\n\n"
@@ -116,7 +122,6 @@ def responder_numeros():
             ]
         })
     else:
-        # Si no coincide exactamente con 1, 2, 3, 4 o 5, responde vacío para no interferir
         return jsonify({"replies": []})
 
     return jsonify({"replies": [{"message": texto}]})
