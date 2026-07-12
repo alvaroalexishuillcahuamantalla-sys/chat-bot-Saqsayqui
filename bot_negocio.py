@@ -4,15 +4,13 @@ app = Flask(__name__)
 
 @app.route('/bot_negocio', methods=['POST'])
 def responder_cliente():
-    # --- SISTEMA DE LECTURA HÍBRIDO ULTRA-SEGURO ---
     mensaje_recibido = ""
     
-    # 1. Intentamos leer los datos si vienen en formato JSON limpio
+    # Lectura híbrida para evitar errores de formato (Error 415)
     if request.is_json:
         datos = request.get_json()
         mensaje_recibido = datos.get("message", "")
     else:
-        # 2. Si AutoResponder lo envía como texto plano por error (Error 415), lo forzamos a leer aquí
         try:
             mensaje_recibido = request.data.decode('utf-8')
         except Exception:
@@ -21,13 +19,17 @@ def responder_cliente():
     if mensaje_recibido is None:
         mensaje_recibido = ""
         
-    # Limpieza absoluta: quitamos espacios extras y convertimos todo a minúsculas
+    # Limpieza total del texto: quitamos espacios y dejamos en minúsculas
     mensaje_cliente = str(mensaje_recibido).strip().lower()
     
-    # --- ÁRBOL DE DECISIONES DE SAQSAYKI (OPCIÓN POR OPCIÓN) ---
+    # --- ÁRBOL DE DECISIONES CON VALIDACIÓN EXACTA ---
     
-    # 📌 OPCIÓN 1: HORARIOS E INGRESO
-    if mensaje_cliente == "1" or "1" in mensaje_cliente:
+    # Si es una de las palabras clave de bienvenida o reinicio, va al menú
+    if mensaje_cliente in ["", "hola", "buenas", "menu", "inicio", "p", "buenos dias", "buenas tardes", "menú"]:
+        return mostrar_menu_principal()
+        
+    # VALIDACIÓN EXACTA: Comparamos directamente el mensaje completo
+    if mensaje_cliente == "1":
         texto_respuesta = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
             "🕒 *HORARIOS E INGRESO*\n\n"
@@ -44,10 +46,9 @@ def responder_cliente():
             "• Diversos miradores turísticos\n\n"
             "💬 Escriba *menu* para volver al inicio"
         )
-        return jsonify({"replies": [{"message": texto_respuesta}]})
-
-    # 📌 OPCIÓN 2: PRECIOS UNITARIOS DE JUEGOS
-    elif mensaje_cliente == "2" or "2" in mensaje_cliente:
+        return generar_respuesta(texto_respuesta)
+        
+    elif mensaje_cliente == "2":
         texto_respuesta = (
             "💰 *PRECIOS UNITARIOS DE JUEGOS*\n\n"
             "🌊 *Juegos Acuáticos*\n"
@@ -60,10 +61,9 @@ def responder_cliente():
             "• Circuito de 21 obstáculos extremos — S/ 20.00\n\n"
             "💬 Escriba *menu* para volver al inicio"
         )
-        return jsonify({"replies": [{"message": texto_respuesta}]})
-
-    # 📌 OPCIÓN 3: PAQUETES PROMOCIONALES
-    elif mensaje_cliente == "3" or "3" in mensaje_cliente:
+        return generar_respuesta(texto_respuesta)
+        
+    elif mensaje_cliente == "3":
         texto_respuesta = (
             "🎒 *PAQUETES PROMOCIONALES*\n\n"
             "💦 *Paquete Acuático — S/ 25.00*\n"
@@ -87,10 +87,9 @@ def responder_cliente():
             "• Puente acuático\n\n"
             "💬 Escriba *menu* para volver al inicio"
         )
-        return jsonify({"replies": [{"message": texto_respuesta}]})
-
-    # 📌 OPCIÓN 4: CÓMO LLEGAR
-    elif mensaje_cliente == "4" or "4" in mensaje_cliente:
+        return generar_respuesta(texto_respuesta)
+        
+    elif mensaje_cliente == "4":
         texto_respuesta = (
             "📍 *CÓMO LLEGAR A SAQSAYKI*\n\n"
             "🏃‍♂️‍➡️ Nos encontramos aproximadamente a 30 minutos a pie desde la Chicana Grande.\n\n"
@@ -104,10 +103,9 @@ def responder_cliente():
             "• 942 208 931\n\n"
             "💬 Escriba *menu* para volver al inicio"
         )
-        return jsonify({"replies": [{"message": texto_respuesta}]})
-    
-    # 📌 OPCIÓN 5: RESTAURANTE (Manda texto + imagen de la carta)
-    elif mensaje_cliente == "5" or "5" in mensaje_cliente:
+        return generar_respuesta(texto_respuesta)
+        
+    elif mensaje_cliente == "5":
         return jsonify({
             "replies": [
                 {
@@ -123,25 +121,31 @@ def responder_cliente():
                 }
             ]
         })
-        
-    # 📌 MENÚ PRINCIPAL (Cae aquí si escriben 'menu', saludan o si falla cualquier subregla)
-    else:
-        texto_respuesta = (
-            "¡Buenas noches! ✨\n\n"
-            "Bienvenido(a) al *Parque Temático Saqsayki*\n\n"
-            "Vive una experiencia única llena de aventura, diversión y naturaleza.\n\n"
-            "📌 *Seleccione una opción escribiendo el número:*\n\n"
-            "1️⃣ Horarios e ingreso\n"
-            "2️⃣ Precios unitarios de juegos\n"
-            "3️⃣ Paquetes promocionales\n"
-            "4️⃣ Cómo llegar\n"
-            "5️⃣ Restaurante 🍽️ (Ver carta completa)\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "💡 Ingrese una de las opciones\n\n"
-            "📌 *Comandos:* Escriba *menu* para ver este mensaje nuevamente\n\n"
-            "📍 Saqsayki - Tu mejor experiencia"
-        )
-        return jsonify({"replies": [{"message": texto_respuesta}]})
+    
+    # Si el mensaje no es exactamente un número del 1 al 5, por seguridad envía el menú principal
+    return mostrar_menu_principal()
+
+
+def mostrar_menu_principal():
+    texto = (
+        "¡Buenas noches! ✨\n\n"
+        "Bienvenido(a) al *Parque Temático Saqsayki*\n\n"
+        "Vive una experiencia única llena de aventura, diversión y naturaleza.\n\n"
+        "📌 *Seleccione una opción escribiendo el número:*\n\n"
+        "1️⃣ Horarios e ingreso\n"
+        "2️⃣ Precios unitarios de juegos\n"
+        "3️⃣ Paquetes promocionales\n"
+        "4️⃣ Cómo llegar\n"
+        "5️⃣ Restaurante 🍽️ (Ver carta completa)\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "💡 Ingrese una de las opciones\n\n"
+        "📌 *Comandos:* Escriba *menu* para ver este mensaje nuevamente\n\n"
+        "📍 Saqsayki - Tu mejor experiencia"
+    )
+    return generar_respuesta(texto)
+
+def generar_respuesta(texto_mensaje):
+    return jsonify({"replies": [{"message": texto_mensaje}]})
 
 if __name__ == '__main__':
     app.run()
