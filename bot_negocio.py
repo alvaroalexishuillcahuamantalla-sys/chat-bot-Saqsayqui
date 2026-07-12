@@ -7,10 +7,11 @@ app = Flask(__name__)
 def responder_numeros():
     mensaje_recibido = ""
     
-    # 1. Intentamos leer el JSON de AutoResponder
+    # 1. Extraemos estrictamente el texto del mensaje del JSON
     if request.is_json:
         try:
             datos = request.get_json()
+            # Jalamos únicamente lo que el cliente escribió en WhatsApp
             mensaje_recibido = datos.get("message", "")
         except Exception:
             pass
@@ -20,23 +21,23 @@ def responder_numeros():
         except Exception:
             pass
 
+    # Si por alguna razón llega vacío, detenemos la ejecución
     if not mensaje_recibido:
         return jsonify({"replies": []})
 
-    # Convertimos a string y limpiamos espacios básicos
+    # Convertimos a texto limpio, sin espacios al inicio o final
     texto_cliente = str(mensaje_recibido).strip()
 
-    # 🚨 EXTRACCIÓN INTELIGENTE 🚨
-    # Buscamos un número del 1 al 5 en el mensaje real del cliente.
-    # Si el cliente escribió "2" o "la opcion 2", esto va a capturar el "2".
+    # 🚨 CLASIFICACIÓN EXACTA DEL NÚMERO 🚨
+    # Buscamos el primer número del 1 al 5 que aparezca en el mensaje del cliente
     busqueda = re.search(r'[1-5]', texto_cliente)
     
     if not busqueda:
-        return jsonify({"replies": []}) # Si no hay un número del 1 al 5, no hace nada
+        return jsonify({"replies": []}) # Si no mandó un número válido, no responde nada
         
     opcion = busqueda.group(0)
 
-    # 3. Emparejamos la opción con su respectivo mensaje
+    # 2. Asignación de contenidos según la opción detectada
     if opcion == "1":
         texto = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
