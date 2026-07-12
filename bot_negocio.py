@@ -7,7 +7,7 @@ app = Flask(__name__)
 def responder_cliente():
     mensaje_recibido = ""
     
-    # Sistema híbrido para leer el formato enviado por AutoResponder
+    # 1. Sistema de lectura híbrido para capturar el mensaje sin importar el formato
     if request.is_json:
         datos = request.get_json()
         mensaje_recibido = datos.get("message", "")
@@ -20,22 +20,18 @@ def responder_cliente():
     if mensaje_recibido is None:
         mensaje_recibido = ""
         
-    # Limpiamos espacios y pasamos a minúsculas
+    # Limpieza absoluta de espacios y conversión a minúsculas
     mensaje_cliente = str(mensaje_recibido).strip().lower()
     
-    # 🚨 FILTRO 1: Si escribe explícitamente palabras para ver el menú, lo enviamos directo
-    if mensaje_cliente in ["menu", "menú", "hola", "buenas", "inicio", "buenos dias", "buenas tardes"]:
-        return mostrar_menu_principal()
-
-    # 🚨 FILTRO 2: Buscamos si hay un número del 1 al 5 aislado en el mensaje usando Regex nativo
-    # Esto evita que textos que contengan un "1" por error (como una dirección o un saludo largo) activen la opción
+    # 🚨 FILTRO PRIORITARIO: Buscamos si hay un número aislado del 1 al 5 en el mensaje
+    # Usamos expresiones regulares para extraer quirúrgicamente el número
     numero_encontrado = re.search(r'\b([1-5])\b', mensaje_cliente)
     
     if numero_encontrado:
         opcion = numero_encontrado.group(1)
         
         if opcion == "1":
-            return generar_respuesta(
+            texto_respuesta = (
                 "📍 *Saqsayki - Tu mejor experiencia*\n"
                 "🕒 *HORARIOS E INGRESO*\n\n"
                 "📅 Lunes a domingo (incluyendo feriados)\n"
@@ -51,9 +47,10 @@ def responder_cliente():
                 "• Diversos miradores turísticos\n\n"
                 "💬 Escriba *menu* para volver al inicio"
             )
+            return generar_respuesta(texto_respuesta)
             
         elif opcion == "2":
-            return generar_respuesta(
+            texto_respuesta = (
                 "💰 *PRECIOS UNITARIOS DE JUEGOS*\n\n"
                 "🌊 *Juegos Acuáticos*\n"
                 "• Caminata en línea — S/ 5.00\n"
@@ -65,9 +62,10 @@ def responder_cliente():
                 "• Circuito de 21 obstáculos extremos — S/ 20.00\n\n"
                 "💬 Escriba *menu* para volver al inicio"
             )
+            return generar_respuesta(texto_respuesta)
             
         elif opcion == "3":
-            return generar_respuesta(
+            texto_respuesta = (
                 "🎒 *PAQUETES PROMOCIONALES*\n\n"
                 "💦 *Paquete Acuático — S/ 25.00*\n"
                 "• Entrada al parque\n"
@@ -90,9 +88,10 @@ def responder_cliente():
                 "• Puente acuático\n\n"
                 "💬 Escriba *menu* para volver al inicio"
             )
+            return generar_respuesta(texto_respuesta)
             
         elif opcion == "4":
-            return generar_respuesta(
+            texto_respuesta = (
                 "📍 *CÓMO LLEGAR A SAQSAYKI*\n\n"
                 "🏃‍♂️‍➡️ Nos encontramos aproximadamente a 30 minutos a pie desde la Chicana Grande.\n\n"
                 "🚕 En taxi podrás llegar en aproximadamente 15 minutos desde Chicana Grande.\n\n"
@@ -105,6 +104,7 @@ def responder_cliente():
                 "• 942 208 931\n\n"
                 "💬 Escriba *menu* para volver al inicio"
             )
+            return generar_respuesta(texto_respuesta)
             
         elif opcion == "5":
             return jsonify({
@@ -117,13 +117,14 @@ def responder_cliente():
                             "¿Tienes alguna consulta? Escríbenos sin problema, estamos para ayudarte.\n\n"
                             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                             "💬 Escriba *menu* para volver al inicio"
-                        ),
+                    ),
                         "image": "https://i.ibb.co/6w2zX9q/carta-ejemplo.jpg" 
                     }
                 ]
             })
 
-    # 🚨 FILTRO 3: Si el mensaje es cualquier otra cosa que no sea un número del 1 al 5, manda el Menú Principal
+    # 🚨 RESPUESTA POR DEFECTO: Si el mensaje no contiene los números 1, 2, 3, 4 o 5,
+    # significa que es un saludo, un error, o la palabra "menu". Enviamos el menú completo.
     return mostrar_menu_principal()
 
 
