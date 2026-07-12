@@ -7,9 +7,10 @@ app = Flask(__name__)
 def responder_cliente():
     mensaje_recibido = ""
     
-    # 1. Sistema de lectura híbrido a prueba de errores 415
+    # 1. Intentamos extraer el mensaje de forma segura del JSON
     if request.is_json:
         datos = request.get_json()
+        # Traemos solo el valor de "message" para ignorar IDs de reglas u otros números del sistema
         mensaje_recibido = datos.get("message", "")
     else:
         try:
@@ -20,19 +21,18 @@ def responder_cliente():
     if mensaje_recibido is None:
         mensaje_recibido = ""
         
-    # 2. LIMPIEZA ABSOLUTA DE METADATOS DE AUTORESPONDER
-    # Convertimos a minúsculas, quitamos espacios y removemos puntos/signos extras
+    # 2. Limpieza extrema del texto del cliente
+    # Quitamos espacios, pasamos a minúsculas y eliminamos puntos/comas
     mensaje_cliente = str(mensaje_recibido).strip().lower().replace(".", "").replace(",", "")
     
-    # 🚨 CLASIFICACIÓN QUIRÚRGICA: ¿HAY UN NÚMERO DEL 1 AL 5 AQUÍ?
-    # Buscamos cualquier dígito del 1 al 5 usando expresiones regulares
-    buscar_numero = re.search(r'[1-5]', mensaje_cliente)
+    # 🚨 CLASIFICACIÓN ULTRA-ESTRICTA 🚨
     
-    if buscar_numero:
-        # Extraemos el número exacto encontrado (Aislamos el número de cualquier texto basura)
-        opcion = buscar_numero.group(0)
+    # Buscamos si el mensaje del cliente es EXACTAMENTE un número del 1 al 5
+    # El símbolo ^ significa "inicia con" y $ significa "termina con". 
+    # Esto garantiza que SOLO responda si el cliente escribió el número puro y nada más.
+    if re.match(r'^[1-5]$', mensaje_cliente):
         
-        if opcion == "1":
+        if mensaje_cliente == "1":
             texto_respuesta = (
                 "📍 *Saqsayki - Tu mejor experiencia*\n"
                 "🕒 *HORARIOS E INGRESO*\n\n"
@@ -51,7 +51,7 @@ def responder_cliente():
             )
             return generar_respuesta(texto_respuesta)
             
-        elif opcion == "2":
+        elif mensaje_cliente == "2":
             texto_respuesta = (
                 "💰 *PRECIOS UNITARIOS DE JUEGOS*\n\n"
                 "🌊 *Juegos Acuáticos*\n"
@@ -66,7 +66,7 @@ def responder_cliente():
             )
             return generar_respuesta(texto_respuesta)
             
-        elif opcion == "3":
+        elif mensaje_cliente == "3":
             texto_respuesta = (
                 "🎒 *PAQUETES PROMOCIONALES*\n\n"
                 "💦 *Paquete Acuático — S/ 25.00*\n"
@@ -92,7 +92,7 @@ def responder_cliente():
             )
             return generar_respuesta(texto_respuesta)
             
-        elif opcion == "4":
+        elif mensaje_cliente == "4":
             texto_respuesta = (
                 "📍 *CÓMO LLEGAR A SAQSAYKI*\n\n"
                 "🏃‍♂️‍➡️ Nos encontramos aproximadamente a 30 minutos a pie desde la Chicana Grande.\n\n"
@@ -108,7 +108,7 @@ def responder_cliente():
             )
             return generar_respuesta(texto_respuesta)
             
-        elif opcion == "5":
+        elif mensaje_cliente == "5":
             return jsonify({
                 "replies": [
                     {
@@ -125,9 +125,9 @@ def responder_cliente():
                 ]
             })
 
-    # 🚨 CLASIFICACIÓN DE TEXTO / BIENVENIDA:
-    # Si el mensaje no contiene ningún número del 1 al 5 (letras, palabras como "hola", "menu", "precio"),
-    # cae automáticamente aquí y envía el mensaje de bienvenida de forma obligatoria.
+    # 🚨 CLASIFICACIÓN DE TEXTO POR DESCARTE 🚨
+    # Si el cliente escribió "hola", "menu", letras o cualquier cosa que NO sea exactamente un número del 1 al 5,
+    # el sistema lo clasifica como TEXTO automáticamente y manda el Menú de Bienvenida.
     return mostrar_menu_principal()
 
 
