@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import re
 
 app = Flask(__name__)
 
@@ -7,11 +6,10 @@ app = Flask(__name__)
 def responder_numeros():
     mensaje_recibido = ""
     
-    # 1. Extraemos estrictamente el texto del mensaje del JSON
+    # 1. Extraemos estrictamente el texto del mensaje del JSON de AutoResponder
     if request.is_json:
         try:
             datos = request.get_json()
-            # Jalamos únicamente lo que el cliente escribió en WhatsApp
             mensaje_recibido = datos.get("message", "")
         except Exception:
             pass
@@ -21,23 +19,16 @@ def responder_numeros():
         except Exception:
             pass
 
-    # Si por alguna razón llega vacío, detenemos la ejecución
+    # Si no hay mensaje, respondemos vacío de inmediato
     if not mensaje_recibido:
         return jsonify({"replies": []})
 
-    # Convertimos a texto limpio, sin espacios al inicio o final
-    texto_cliente = str(mensaje_recibido).strip()
+    # 2. LIMPIEZA TOTAL: Nos quedamos SOLO con los números del mensaje del cliente
+    # Esto elimina cualquier espacio, texto, puntos o basura alrededor.
+    opcion = "".join(caracter for caracter in str(mensaje_recibido) if caracter.isdigit()).strip()
 
-    # 🚨 CLASIFICACIÓN EXACTA DEL NÚMERO 🚨
-    # Buscamos el primer número del 1 al 5 que aparezca en el mensaje del cliente
-    busqueda = re.search(r'[1-5]', texto_cliente)
-    
-    if not busqueda:
-        return jsonify({"replies": []}) # Si no mandó un número válido, no responde nada
-        
-    opcion = busqueda.group(0)
-
-    # 2. Asignación de contenidos según la opción detectada
+    # 3. EVALUACIÓN EXACTA
+    # Ahora sí, comparamos el número limpio directamente para que no se confunda con nada más
     if opcion == "1":
         texto = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
@@ -123,6 +114,7 @@ def responder_numeros():
             ]
         })
     else:
+        # Si llega cualquier otra cosa que no sea del 1 al 5, no respondemos nada
         return jsonify({"replies": []})
 
     return jsonify({"replies": [{"message": texto}]})
