@@ -1,34 +1,42 @@
 from flask import Flask, request, jsonify
+import re
 
 app = Flask(__name__)
 
 @app.route('/bot_negocio', methods=['POST'])
 def responder_numeros():
-    mensaje_recibido = ""
+    # 1. CAPTURA TOTAL DE DATOS (Buscamos texto en cualquier formato)
+    datos_brutos = ""
     
-    # 1. Extraemos estrictamente el texto del mensaje del JSON de AutoResponder
+    try:
+        # Intentamos obtenerlo como texto plano o formulario primero
+        datos_brutos = request.get_data(as_text=True) or ""
+    except Exception:
+        pass
+
+    # Si viene como JSON, lo convertimos a texto para rastrear los números
     if request.is_json:
         try:
-            datos = request.get_json()
-            mensaje_recibido = datos.get("message", "")
-        except Exception:
-            pass
-    else:
-        try:
-            mensaje_recibido = request.data.decode('utf-8')
+            json_data = request.get_json()
+            # Si existe la llave "message", le damos prioridad absoluta
+            if json_data and "message" in json_data:
+                datos_brutos = str(json_data.get("message", ""))
+            else:
+                datos_brutos = str(json_data)
         except Exception:
             pass
 
-    # Si no hay mensaje, respondemos vacío de inmediato
-    if not mensaje_recibido:
+    # 2. RASTREO DEL NÚMERO
+    # Buscamos el primer número del 1 al 5 que exista en cualquier parte del paquete recibido
+    busqueda = re.search(r'[1-5]', datos_brutos)
+    
+    if not busqueda:
+        # Si de verdad no hay ningún número del 1 al 5, no respondemos nada para evitar bucles
         return jsonify({"replies": []})
+        
+    opcion = busqueda.group(0)
 
-    # 2. LIMPIEZA TOTAL: Nos quedamos SOLO con los números del mensaje del cliente
-    # Esto elimina cualquier espacio, texto, puntos o basura alrededor.
-    opcion = "".join(caracter for caracter in str(mensaje_recibido) if caracter.isdigit()).strip()
-
-    # 3. EVALUACIÓN EXACTA
-    # Ahora sí, comparamos el número limpio directamente para que no se confunda con nada más
+    # 3. ASIGNACIÓN DE CONTENIDOS SEGÚN EL NÚMERO ENCONTRADO
     if opcion == "1":
         texto = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
@@ -114,7 +122,6 @@ def responder_numeros():
             ]
         })
     else:
-        # Si llega cualquier otra cosa que no sea del 1 al 5, no respondemos nada
         return jsonify({"replies": []})
 
     return jsonify({"replies": [{"message": texto}]})
