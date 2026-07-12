@@ -6,7 +6,7 @@ app = Flask(__name__)
 def responder_cliente():
     mensaje_recibido = ""
     
-    # 1. Sistema de lectura híbrido para capturar el mensaje enviado por AutoResponder
+    # 1. Sistema de lectura híbrido para capturar el mensaje de AutoResponder
     if request.is_json:
         datos = request.get_json()
         mensaje_recibido = datos.get("message", "")
@@ -19,13 +19,18 @@ def responder_cliente():
     if mensaje_recibido is None:
         mensaje_recibido = ""
         
-    # Limpieza absoluta de espacios en blanco y conversión a minúsculas
-    mensaje_cliente = str(mensaje_recibido).strip().lower()
+    # --- LIMPIEZA QUIRÚRGICA DE BASURA ---
+    # Convertimos a minúsculas, quitamos espacios y eliminamos los puntos sueltos 
+    # que AutoResponder añade obligatoriamente en la interfaz del celular
+    mensaje_cliente = str(mensaje_recibido).strip().lower().replace(".", "")
     
-    # --- ÁRBOL DE DECISIONES CON COINCIDENCIA DE TEXTO EXACTO ---
-    # Esto evita que metadatos de AutoResponder activen la opción 1 por error
-    
-    if mensaje_cliente == "1":
+    # 🚨 FILTRO INTERNO: Si explícitamente piden el menú o saludan, va al Menú de Bienvenida
+    if mensaje_cliente in ["menu", "menú", "hola", "buenas", "inicio", "buenos dias", "buenas tardes"]:
+        return mostrar_menu_principal()
+
+    # 🚨 DETECTOR ULTRA-FLEXIBLE POR INICIO DE MENSAJE:
+    # Verificamos con qué número empieza el mensaje (así evitamos el bloqueo del "==")
+    if mensaje_cliente.startswith("1"):
         texto_respuesta = (
             "📍 *Saqsayki - Tu mejor experiencia*\n"
             "🕒 *HORARIOS E INGRESO*\n\n"
@@ -44,7 +49,7 @@ def responder_cliente():
         )
         return generar_respuesta(texto_respuesta)
         
-    elif mensaje_cliente == "2":
+    elif mensaje_cliente.startswith("2"):
         texto_respuesta = (
             "💰 *PRECIOS UNITARIOS DE JUEGOS*\n\n"
             "🌊 *Juegos Acuáticos*\n"
@@ -59,7 +64,7 @@ def responder_cliente():
         )
         return generar_respuesta(texto_respuesta)
         
-    elif mensaje_cliente == "3":
+    elif mensaje_cliente.startswith("3"):
         texto_respuesta = (
             "🎒 *PAQUETES PROMOCIONALES*\n\n"
             "💦 *Paquete Acuático — S/ 25.00*\n"
@@ -85,7 +90,7 @@ def responder_cliente():
         )
         return generar_respuesta(texto_respuesta)
         
-    elif mensaje_cliente == "4":
+    elif mensaje_cliente.startswith("4"):
         texto_respuesta = (
             "📍 *CÓMO LLEGAR A SAQSAYKI*\n\n"
             "🏃‍♂️‍➡️ Nos encontramos aproximadamente a 30 minutos a pie desde la Chicana Grande.\n\n"
@@ -101,7 +106,7 @@ def responder_cliente():
         )
         return generar_respuesta(texto_respuesta)
         
-    elif mensaje_cliente == "5":
+    elif mensaje_cliente.startswith("5"):
         return jsonify({
             "replies": [
                 {
@@ -118,8 +123,9 @@ def responder_cliente():
             ]
         })
 
-    # 🚨 SI NO ES EXACTAMENTE EL NÚMERO 1, 2, 3, 4 o 5:
-    # Cualquier palabra, saludo o texto enviará obligatoriamente el MENÚ PRINCIPAL.
+    # 🚨 RESPUESTA POR DEFECTO PARA TODO LO DEMÁS:
+    # Si no empieza con un número del 1 al 5 (letras, palabras, cualquier mensaje extraño),
+    # enviará obligatoriamente el menú de bienvenida.
     return mostrar_menu_principal()
 
 
